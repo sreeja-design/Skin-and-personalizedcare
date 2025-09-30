@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalized Skin & Diet Planner</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind with a pink color scheme
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#DB2777', // DEEP ROSE PINK
+                        'secondary': '#1F2937', // Dark Gray (for contrast)
+                        'accent': '#FDE047', // Yellow Accent
+                        'pregnant': '#FBBF24', // Amber/Yellow for Pregnancy
+                        'teen': '#A78BFA', // Violet for Teen
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FCE7F6; /* SOFT LIGHT PINK TINT */
+        }
+        /* Custom styling for result cards */
+        .result-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+        .detailed-plan-heading {
+            border-left: 4px solid #DB2777;
+            padding-left: 1rem;
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex justify-center items-center min-h-screen">
+
+    <!-- Main Container Card -->
+    <div class="w-full max-w-6xl bg-white rounded-2xl shadow-2xl p-6 md:p-10">
+        
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-secondary tracking-tight">
+                Skin Care & Personalized Health Planner
+            </h1>
+            <p class="text-gray-500 mt-2">
+                Calculate your estimated Basal Metabolic Rate (BMR), Total Daily Energy Expenditure (TDEE), Protein needs, and access essential skincare suggestions.
+            </p>
+        </header>
+        
+        <!-- Time-Based Reminder Banner -->
+        <div id="timeBasedReminder" class="bg-pink-100 border-l-4 border-primary p-4 rounded-lg mb-8" role="alert">
+            <!-- Content filled by JavaScript -->
+            <p class="font-bold text-lg text-primary" id="reminderGreeting"></p>
+            <p class="text-gray-700" id="reminderTip"></p>
+        </div>
+
+        <!-- Main Grid: Inputs and Calculation Results -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- COLUMN 1: Input Panel -->
+            <div class="space-y-6 md:col-span-1">
+                <h2 class="text-2xl font-semibold text-primary border-b pb-2">Your Metrics</h2>
+                
+                <form id="calculatorForm" class="space-y-4">
+
+                    <!-- Unit System Selector -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Unit System</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="unitSystem" value="metric" checked class="form-radio text-primary h-4 w-4" onclick="toggleUnits('metric')">
+                                <span class="ml-2 text-gray-700">Metric (kg, cm)</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="unitSystem" value="imperial" class="form-radio text-primary h-4 w-4" onclick="toggleUnits('imperial')">
+                                <span class="ml-2 text-gray-700">Imperial (lbs, ft/in)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Gender Input -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                        <select id="gender" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                            <option value="">-- Select Gender --</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+
+                    <!-- Age Input -->
+                    <div>
+                        <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age (Years)</label>
+                        <input type="number" id="age" min="14" placeholder="e.g., 30" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                    </div>
+                    
+                    <!-- METRIC Inputs (Default) -->
+                    <div id="metricInputs" class="space-y-4">
+                        <!-- Weight Input (KG) -->
+                        <div>
+                            <label for="weightKg" class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                            <input type="number" id="weightKg" min="1" step="0.1" placeholder="e.g., 75.5" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                        </div>
+                        
+                        <!-- Height Input (CM) -->
+                        <div>
+                            <label for="heightCm" class="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
+                            <input type="number" id="heightCm" min="1" step="1" placeholder="e.g., 175" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                        </div>
+                    </div>
+
+                    <!-- IMPERIAL Inputs (Hidden by Default) -->
+                    <div id="imperialInputs" class="space-y-4 hidden">
+                         <!-- Weight Input (LBS) -->
+                        <div>
+                            <label for="weightLbs" class="block text-sm font-medium text-gray-700 mb-1">Weight (lbs)</label>
+                            <input type="number" id="weightLbs" min="1" step="0.1" placeholder="e.g., 165" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                        </div>
+
+                        <!-- Height Input (FT & IN) -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="heightFt" class="block text-sm font-medium text-gray-700 mb-1">Height (Feet)</label>
+                                <input type="number" id="heightFt" min="1" max="8" placeholder="e.g., 5" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                            </div>
+                            <div>
+                                <label for="heightIn" class="block text-sm font-medium text-gray-700 mb-1">Height (Inches)</label>
+                                <input type="number" id="heightIn" min="0" max="11" placeholder="e.g., 9" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Special Health Status Input -->
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Special Health Status</label>
+                        <select id="status" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                            <option value="none">None (Standard Adult)</option>
+                            <option value="pregnant">Pregnant / Breastfeeding</option>
+                            <option value="teen">Teenage Girl (Ages 14-18)</option>
+                        </select>
+                    </div>
+
+                    <!-- Activity Level Input -->
+                    <div>
+                        <label for="activity" class="block text-sm font-medium text-gray-700 mb-1">Activity Level</label>
+                        <select id="activity" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                            <option value="">-- Select Activity Level --</option>
+                            <option value="sedentary">Sedentary (little or no exercise)</option>
+                            <option value="light">Lightly Active (light exercise 1-3 days/week)</option>
+                            <option value="moderate">Moderately Active (moderate exercise 3-5 days/week)</option>
+                            <option value="very">Very Active (hard exercise 6-7 days/week)</option>
+                            <option value="extreme">Extremely Active (very hard daily exercise & physical job)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="w-full bg-primary text-white py-3 rounded-lg font-bold text-lg shadow-md hover:bg-[#A91E5B] transition duration-200 mt-6">
+                        Calculate Needs
+                    </button>
+                </form>
+
+                <!-- Error Message Container -->
+                <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm" role="alert">
+                    Please fill out all fields correctly.
+                </div>
+            </div>
+
+            <!-- COLUMN 2: Results Panel (Calorie/Protein) -->
+            <div class="space-y-6 md:col-span-2">
+                <h2 class="text-2xl font-semibold text-secondary border-b pb-2">Your Results</h2>
+                
+                <div id="resultsContainer" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    
+                    <!-- Result Card: TDEE (Calories) -->
+                    <div class="result-card sm:col-span-1">
+                        <p class="text-sm font-medium text-gray-500">Total Daily Energy Expenditure</p>
+                        <p class="text-4xl font-extrabold text-primary" id="tdeeResult">--</p>
+                        <p class="text-lg font-semibold text-gray-700">Calories / Day</p>
+                    </div>
+
+                    <!-- Result Card: Protein -->
+                    <div class="result-card sm:col-span-1">
+                        <p class="text-sm font-medium text-gray-500">Recommended Daily Protein Intake</p>
+                        <p class="text-4xl font-extrabold text-secondary" id="proteinResult">--</p>
+                        <p class="text-lg font-semibold text-gray-700">Grams (g) / Day</p>
+                    </div>
+
+                    <!-- Result Card: BMR -->
+                    <div class="result-card sm:col-span-1">
+                        <p class="text-sm font-medium text-gray-500">Basal Metabolic Rate</p>
+                        <p class="text-2xl font-bold text-gray-600" id="bmrResult">--</p>
+                        <p class="text-md text-gray-500">Calories / Day</p>
+                    </div>
+                </div>
+
+                <!-- Goal Planning Section -->
+                <div id="goalPlanningContainer" class="hidden space-y-4 pt-6 mt-6 border-t border-gray-200">
+                    <h2 class="text-2xl font-semibold text-primary">Goal Planning Recommendations</h2>
+                    <div id="goalPlanContent" class="space-y-4">
+                        <!-- Quick plans generated here by JavaScript -->
+                    </div>
+                    
+                    <!-- Goal Query Input -->
+                    <div id="goalQuery" class="mt-4 p-4 bg-gray-100 rounded-lg">
+                        <h3 class="text-xl font-bold text-secondary mb-3">Get Your Detailed Action Plan:</h3>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <select id="goalSelect" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                                <option value="">-- Select Your Primary Goal --</option>
+                                <option value="loss">Weight Loss Plan</option>
+                                <option value="gain">Weight Gain Plan</option>
+                                <option value="maintenance">Maintenance/Lifestyle Plan</option>
+                            </select>
+                            <button id="generatePlanButton" class="bg-primary text-white py-3 px-6 rounded-lg font-bold shadow-md hover:bg-[#A91E5B] transition duration-200" disabled>
+                                Generate Detailed Plan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Plan Output -->
+                    <div id="detailedPlanOutput" class="mt-4 p-4 bg-white border border-gray-200 rounded-lg hidden">
+                        <!-- Detailed plan output will go here -->
+                    </div>
+                </div>
+                
+                <div id="initialMessage" class="text-center py-10 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mx-auto text-primary">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25m0 0a2.25 2.25 0 0 0 2.25 2.25h2.25M8.25 16.5h7.5A2.25 2.25 0 0 0 18 14.25v-2.25m-4.5 0h-2.25m2.25 0h2.25M10.5 6h9.75M10.5 6a1.5 1.5 0 0 0 1.5 1.5h1.5a1.5 1.5 0 0 0 1.5-1.5M10.5 6v12M18 18V6" />
+                    </svg>
+                    <p class="mt-3">Enter your details on the left to see your nutritional estimates.</p>
+                </div>
+                
+                <!-- NEW SECTION: Skincare Recommendations -->
+                <div class="space-y-4 pt-6 mt-6 border-t border-gray-200">
+                    <h2 class="text-2xl font-semibold text-primary">Skincare Routine Suggestions</h2>
+                    
+                    <div id="skincareQuery" class="mt-4 p-4 bg-gray-100 rounded-lg">
+                        <h3 class="text-xl font-bold text-secondary mb-3">Get Your Essential Skincare Plan:</h3>
+                        <p class="text-gray-700 text-sm mb-3">Nutrition and hydration are key, but a consistent routine is essential for glowing skin.</p>
+                        <button id="generateSkincareButton" class="w-full bg-accent text-secondary py-3 px-6 rounded-lg font-bold shadow-md hover:bg-[#FACC15] transition duration-200">
+                            View Basic Skincare Routine
+                        </button>
+                    </div>
+
+                    <!-- Detailed Skincare Plan Output -->
+                    <div id="skincarePlanOutput" class="mt-4 p-4 bg-white border border-gray-200 rounded-lg hidden">
+                        <!-- Detailed skincare plan output will go here -->
+                    </div>
+                </div>
+                
+                <!-- NEW SECTION: Food Search -->
+                <div class="space-y-4 pt-6 mt-6 border-t border-gray-200">
+                    <h2 class="text-2xl font-semibold text-primary">Food Finder by Calories</h2>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="number" id="calorieSearchInput" placeholder="Enter max calories (e.g., 250)" min="1" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                        <button id="searchFoodButton" class="bg-secondary text-white py-3 px-6 rounded-lg font-bold shadow-md hover:bg-gray-800 transition duration-200">
+                            Find Foods
+                        </button>
+                    </div>
+
+                    <div id="foodListContainer" class="bg-gray-50 p-4 rounded-lg min-h-[100px] max-h-80 overflow-y-auto">
+                        <p class="text-gray-500" id="foodStatusMessage">Search for foods to see results here.</p>
+                        <ul id="foodList" class="space-y-2">
+                            <!-- Food items will be listed here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Global Variables to store calculated results ---
+        let lastTDEE = 0;
+        let lastProtein = 0;
+
+        // --- Activity Multipliers for TDEE and Protein ---
+        const ACTIVITY_FACTORS = {
+            sedentary: { tdee: 1.2, proteinKg: 0.8 },
+            light: { tdee: 1.375, proteinKg: 1.0 },
+            moderate: { tdee: 1.55, proteinKg: 1.2 },
+            very: { tdee: 1.725, proteinKg: 1.5 },
+            extreme: { tdee: 1.9, proteinKg: 1.8 } // Used for athletes/very heavy work
+        };
+        
+        // --- MOCK FOOD DATABASE (per serving) ---
+        const FOOD_DATABASE = [
+            { name: "Large Apple (182g)", calories: 95, protein: 0.5 },
+            { name: "Plain Greek Yogurt (1 cup, 227g)", calories: 150, protein: 23 },
+            { name: "Hard Boiled Egg (50g)", calories: 78, protein: 6.3 },
+            { name: "Grilled Chicken Breast (100g)", calories: 165, protein: 31 },
+            { name: "Almonds (1 oz / 28g)", calories: 164, protein: 6 },
+            { name: "Broccoli (1 cup chopped, 91g)", calories: 31, protein: 2.5 },
+            { name: "Avocado (1/2 medium)", calories: 160, protein: 2 },
+            { name: "Brown Rice (1 cup cooked)", calories: 216, protein: 5 },
+            { name: "Banana (medium)", calories: 105, protein: 1.3 },
+            { name: "Protein Bar (Average)", calories: 250, protein: 20 },
+            { name: "Salmon Fillet (100g, baked)", calories: 208, protein: 25 },
+            { name: "Small Sweet Potato (114g)", calories: 112, protein: 2 },
+            { name: "Slice of Whole Wheat Bread", calories: 82, protein: 4 },
+            { name: "Cheeseburger (Fast Food)", calories: 300, protein: 15 },
+            { name: "Small Bagel", calories: 277, protein: 11 },
+            { name: "1 cup Skim Milk", calories: 83, protein: 8 },
+            { name: "Small Scoop Vanilla Ice Cream", calories: 137, protein: 2.5 }
+        ];
+
+        // --- DOM Elements ---
+        const form = document.getElementById('calculatorForm');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const initialMessage = document.getElementById('initialMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const bmrResult = document.getElementById('bmrResult');
+        const tdeeResult = document.getElementById('tdeeResult');
+        const proteinResult = document.getElementById('proteinResult');
+        
+        // Time Reminder Elements
+        const reminderGreeting = document.getElementById('reminderGreeting');
+        const reminderTip = document.getElementById('reminderTip');
+
+        // Unit Elements
+        const metricInputs = document.getElementById('metricInputs');
+        const imperialInputs = document.getElementById('imperialInputs');
+        const weightKgInput = document.getElementById('weightKg');
+        const heightCmInput = document.getElementById('heightCm');
+        const weightLbsInput = document.getElementById('weightLbs');
+        const heightFtInput = document.getElementById('heightFt');
+        const heightInInput = document.getElementById('heightIn');
+        const ageInput = document.getElementById('age');
+        
+        // Goal Planning Elements
+        const goalPlanningContainer = document.getElementById('goalPlanningContainer');
+        const goalPlanContent = document.getElementById('goalPlanContent');
+        const goalSelect = document.getElementById('goalSelect');
+        const generatePlanButton = document.getElementById('generatePlanButton');
+        const detailedPlanOutput = document.getElementById('detailedPlanOutput');
+        const statusSelect = document.getElementById('status'); // NEW: Status Select Element
+
+        // Skincare Elements
+        const generateSkincareButton = document.getElementById('generateSkincareButton');
+        const skincarePlanOutput = document.getElementById('skincarePlanOutput');
+
+        // Food Search Elements
+        const calorieSearchInput = document.getElementById('calorieSearchInput');
+        const searchFoodButton = document.getElementById('searchFoodButton');
+        const foodList = document.getElementById('foodList');
+        const foodStatusMessage = document.getElementById('foodStatusMessage');
+
+
+        /**
+         * Toggles visibility of Metric vs Imperial input fields.
+         * @param {string} unit - 'metric' or 'imperial'.
+         */
+        function toggleUnits(unit) {
+            if (unit === 'metric') {
+                metricInputs.classList.remove('hidden');
+                imperialInputs.classList.add('hidden');
+            } else {
+                metricInputs.classList.add('hidden');
+                imperialInputs.classList.remove('hidden');
+            }
+            // Clear error message when units switch
+            errorMessage.classList.add('hidden');
+        }
+
+
+        // --- TIME-BASED REMINDER LOGIC ---
+
+        /**
+         * Sets the greeting and health tip based on the current hour.
+         */
+        function displayTimeBasedReminder() {
+            const currentHour = new Date().getHours();
+            let greeting = "Hello!";
+            let tip = "Time is a great resource. Take a moment to calculate your goals!";
+            
+            // Morning (5:00 to 11:59)
+            if (currentHour >= 5 && currentHour < 12) {
+                greeting = "Good Morning! ☀️";
+                tip = "Start your day with **protein and fiber** to stabilize energy levels and curb cravings.";
+            } 
+            // Afternoon (12:00 to 16:59)
+            else if (currentHour >= 12 && currentHour < 17) {
+                greeting = "Good Afternoon! 🥗";
+                tip = "Refuel with a balanced lunch. Don't forget those veggies for sustained energy!";
+            } 
+            // Evening (17:00 to 20:59)
+            else if (currentHour >= 17 && currentHour < 21) {
+                greeting = "Good Evening! 🏃‍♀️";
+                tip = "If you've exercised, focus on a protein-rich dinner for muscle recovery tonight.";
+            } 
+            // Night (21:00 to 4:59)
+            else {
+                greeting = "Good Night! 🌙";
+                tip = "Prioritize quality sleep. It is vital for **hormone balance and successful weight management**.";
+            }
+
+            reminderGreeting.textContent = greeting;
+            reminderTip.innerHTML = tip; // Use innerHTML to render bold tags
+        }
+
+        // --- CALCULATION AND UTILITY FUNCTIONS ---
+
+        /**
+         * Calculates the Basal Metabolic Rate (BMR) using the Mifflin-St Jeor equation.
+         * Note: Requires weight in KG and height in CM.
+         */
+        function calculateBMR(weightKg, heightCm, age, gender) {
+            // Formula: (10 * weight in kg) + (6.25 * height in cm) - (5 * age in years) + S
+            let bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
+
+            if (gender === 'male') {
+                bmr += 5; // S = +5 for men
+            } else if (gender === 'female') {
+                bmr -= 161; // S = -161 for women
+            }
+            return Math.round(bmr);
+        }
+
+        /**
+         * Calculates the Total Daily Energy Expenditure (TDEE).
+         */
+        function calculateTDEE(bmr, activityLevel) {
+            const factor = ACTIVITY_FACTORS[activityLevel].tdee;
+            if (!factor) return 0;
+            return Math.round(bmr * factor);
+        }
+        
+        /**
+         * Calculates the recommended daily protein intake (g/day).
+         * Adjusts for special status (Pregnant/Teenage Girl) if applicable.
+         */
+        function calculateProtein(weightKg, activityLevel, status) {
+            let multiplier = ACTIVITY_FACTORS[activityLevel].proteinKg;
+
+            if (status === 'pregnant') {
+                // Pregnant/Breastfeeding recommended intake is about 1.1 - 1.3 g/kg of body weight
+                multiplier = 1.2;
+            } else if (status === 'teen') {
+                // Teenage girls need higher protein for growth, baseline ~0.85 g/kg. 
+                // We ensure it's at least 0.9 g/kg, overriding low activity multiplier.
+                multiplier = Math.max(multiplier, 0.9); 
+            }
+            
+            if (!multiplier) return 0;
+            return Math.round(weightKg * multiplier);
+        }
+        
+        /**
+         * Displays calorie and macro recommendations for weight loss and gain.
+         */
+        function displayGoalPlan(tdee, protein, status) {
+            // Standard recommended healthy deficits/surpluses
+            const lossDeficit = 500; // ~1 lb / week loss
+            const gainSurplus = 300; // ~0.5 lb / week gain
+
+            const lossCalorieTarget = tdee - lossDeficit;
+            const gainCalorieTarget = tdee + gainSurplus;
+            
+            // Ensure calorie targets are not drastically low (1200 is a common minimum for women)
+            const safeLossCalorieTarget = Math.max(lossCalorieTarget, 1200); 
+
+            // Save for detailed plan generation
+            lastTDEE = tdee;
+            lastProtein = protein;
+
+            // --- Special Plan Messages (Overrides/Warnings) ---
+            let specialPlanMessage = '';
+            if (status === 'pregnant') {
+                specialPlanMessage = `
+                    <div class="p-4 bg-yellow-100 border border-pregnant text-yellow-800 rounded-lg mb-4">
+                        <h3 class="font-bold text-xl mb-2">Note on Pregnancy / Breastfeeding:</h3>
+                        <p>
+                            The standard TDEE calculation is an estimate. Calorie needs increase significantly in the **$2^{nd}$ and $3^{rd}$ trimesters**. Please click **"Generate Detailed Plan"** below for specific guidance based on your status, and **always consult your doctor**.
+                        </p>
+                    </div>
+                `;
+            } else if (status === 'teen') {
+                specialPlanMessage = `
+                    <div class="p-4 bg-purple-100 border border-teen text-purple-800 rounded-lg mb-4">
+                        <h3 class="font-bold text-xl mb-2">Note on Teen Health (Ages 14-18):</h3>
+                        <p>
+                            For growing teens, nutrient-density and adequate calories are crucial. Avoid extreme deficits. Please click **"Generate Detailed Plan"** below for guidance tailored to growth and development.
+                        </p>
+                    </div>
+                `;
+            }
+
+
+            const maintenancePlan = `
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 class="font-bold text-xl text-blue-600 mb-2">Maintenance Target:</h3>
+                    <p class="text-gray-700">
+                        To **maintain** your current weight, consume **${tdee.toLocaleString()} Calories** per day.
+                    </p>
+                </div>
+            `;
+            
+            const lossPlan = `
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h3 class="font-bold text-xl text-red-600 mb-2">Weight Loss Target:</h3>
+                    <p class="text-gray-700">
+                        For sustainable weight loss, aim for **${safeLossCalorieTarget.toLocaleString()} Calories** per day.
+                    </p>
+                </div>
+            `;
+
+            const gainPlan = `
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h3 class="font-bold text-xl text-green-600 mb-2">Weight Gain Target:</h3>
+                    <p class="text-gray-700">
+                        For healthy weight gain (muscle), aim for **${gainCalorieTarget.toLocaleString()} Calories** per day.
+                    </p>
+                </div>
+            `;
+
+            goalPlanContent.innerHTML = specialPlanMessage + maintenancePlan + lossPlan + gainPlan;
+            goalPlanningContainer.classList.remove('hidden');
+            
+            // Reset and hide detailed plan when new TDEE is calculated
+            detailedPlanOutput.classList.add('hidden');
+            detailedPlanOutput.innerHTML = '';
+            goalSelect.value = "";
+            
+            // Enable button if a special status is selected, regardless of goal dropdown state
+            generatePlanButton.disabled = (status === 'none' && !goalSelect.value);
+        }
+
+        /**
+         * Generates a detailed, personalized action plan based on the chosen goal or special status.
+         */
+        function generateDetailedPlan(goal, tdee, protein, status) {
+            detailedPlanOutput.classList.remove('hidden');
+            let title = "";
+            let content = "";
+            
+            const safeLossCalorieTarget = Math.max(tdee - 500, 1200); 
+            const gainCalorieTarget = tdee + 300;
+            
+            // 1. Specialized Status Plan Priority
+            if (status === 'pregnant') {
+                title = "Prenatal/Postpartum Nutrition Plan (Consult Doctor)";
+                
+                content = `
+                    <h4 class="detailed-plan-heading text-pregnant font-bold text-lg">Estimated Calorie Adjustment:</h4>
+                    <p class="text-gray-700 mb-4">
+                        Caloric needs typically **do not change** in the $1^{st}$ trimester. For the **$2^{nd}$ trimester**, aim for an extra **$+340$ Calories/day**. For the **$3^{rd}$ trimester**, aim for an extra **$+450$ Calories/day**. (Base TDEE: ${tdee.toLocaleString()} Calories)
+                    </p>
+
+                    <h5 class="font-semibold text-secondary">Protein Priority:</h5>
+                    <p>Your calculated need is **${protein.toLocaleString()} grams** daily. This supports fetal growth and maternal tissue development. Prioritize lean meats, dairy, beans, and legumes.</p>
+                    
+                    <h5 class="font-semibold text-secondary mt-3">Key Nutrients & Strategies:</h5>
+                    <ul class="list-disc list-inside ml-4 text-sm space-y-1">
+                        <li>**Folic Acid:** Essential for neural tube development, aim for $600$ mcg/day (often through supplements).</li>
+                        <li>**Iron:** Crucial to prevent anemia; often requires supplementation ($27$ mg/day). Pair with Vitamin C for better absorption.</li>
+                        <li>**Calcium & Vitamin D:** Important for bone health for both mother and baby.</li>
+                        <li>**Avoid:** Raw/undercooked fish or meat, unpasteurized cheese, and excessive caffeine.</li>
+                    </ul>
+                    <p class="mt-4 text-xs text-red-500 font-bold">Disclaimer: This is general advice. Always follow the specific guidance of your obstetrician or registered dietitian.</p>
+                `;
+            } else if (status === 'teen') {
+                title = "Teenage Girl (Ages 14-18) Health & Growth Plan";
+                
+                content = `
+                    <h4 class="detailed-plan-heading text-teen font-bold text-lg">Energy Goal: Nutrient-Dense Eating</h4>
+                    <p class="text-gray-700 mb-4">
+                        During active growth and hormonal changes, focusing on **nutrient-density** is more important than strict calorie counting. Your estimated TDEE is **${tdee.toLocaleString()} Calories**.
+                    </p>
+
+                    <h5 class="font-semibold text-secondary">Protein Priority:</h5>
+                    <p>Your calculated need is **${protein.toLocaleString()} grams** daily. Protein is vital for muscle development, skin health, and hormonal balance during adolescence.</p>
+                    
+                    <h5 class="font-semibold text-secondary mt-3">Key Nutrients & Strategies:</h5>
+                    <ul class="list-disc list-inside ml-4 text-sm space-y-1">
+                        <li>**Calcium & Iron:** These are often deficient in this age group. Prioritize dairy, fortified foods, and lean red meat/beans.</li>
+                        <li>**Healthy Fats:** Include avocados, nuts, and fish for brain development and hormone regulation.</li>
+                        <li>**Carbohydrates:** Choose complex carbs (whole grains, oats) for stable energy for school and activities.</li>
+                        <li>**Avoid Restrictive Dieting:** Focus on eating balanced meals and snacks rather than skipping meals or excessive restriction.</li>
+                    </ul>
+                `;
+            } 
+            // 2. Standard Adult Goal Plans (only if status is 'none')
+            else { 
+                if (goal === 'loss') {
+                    title = "Sustainable Weight Loss Action Plan";
+                    const targetCalorie = safeLossCalorieTarget;
+                    content = `
+                        <h4 class="detailed-plan-heading text-red-600 font-bold text-lg">Your Calorie Goal: ${targetCalorie.toLocaleString()} Calories</h4>
+                        <p class="text-gray-700 mb-4">Focus on a controlled calorie deficit to lose approximately $0.5$ to $1$ pound per week, ensuring long-term success.</p>
+
+                        <h5 class="font-semibold text-secondary">Protein Priority:</h5>
+                        <p>Maintain at least **${protein.toLocaleString()} grams** of protein daily. This is critical for **preserving muscle mass** while you lose weight.</p>
+                        
+                        <h5 class="font-semibold text-secondary mt-3">Dietary Strategies:</h5>
+                        <ul class="list-disc list-inside ml-4 text-sm space-y-1">
+                            <li>**Increase Fiber:** Eat plenty of vegetables, fruits, and whole grains to boost satiety.</li>
+                            <li>**Hydration:** Drink a large glass of water before every meal.</li>
+                            <li>**Avoid Liquid Calories:** Cut out sodas, juices, and specialty coffees high in sugar.</li>
+                            <li>**Meal Timing:** Aim for $3$ balanced meals to prevent overeating later in the day.</li>
+                        </ul>
+                    `;
+                } else if (goal === 'gain') {
+                    title = "Healthy Weight Gain (Muscle Building) Action Plan";
+                    const targetCalorie = gainCalorieTarget;
+                    content = `
+                        <h4 class="detailed-plan-heading text-green-600 font-bold text-lg">Your Calorie Goal: ${targetCalorie.toLocaleString()} Calories</h4>
+                        <p class="text-gray-700 mb-4">A moderate calorie surplus helps fuel muscle growth while minimizing excess fat gain.</p>
+                        
+                        <h5 class="font-semibold text-secondary">Protein Priority:</h5>
+                        <p>Target **${protein.toLocaleString()} grams** of protein daily. Distribute this intake evenly across all meals (e.g., $20-40$g per meal) to maximize muscle protein synthesis.</p>
+                        
+                        <h5 class="font-semibold text-secondary mt-3">Dietary Strategies:</h5>
+                        <ul class="list-disc list-inside ml-4 text-sm space-y-1">
+                            <li>**Calorie-Dense Foods:** Choose foods rich in nutrients, like nuts, avocados, dried fruit, and full-fat dairy.</li>
+                            <li>**Pre/Post-Workout Nutrition:** Consume a mix of protein and carbohydrates within an hour after strength training.</li>
+                            <li>**Frequent Meals:** Eat $5-6$ smaller, frequent meals or add liquid calories (smoothies) to increase intake without feeling overly stuffed.</li>
+                        </ul>
+                    `;
+                } else if (goal === 'maintenance') {
+                    title = "Weight Maintenance & Lifestyle Plan";
+                    const targetCalorie = tdee;
+                    content = `
+                        <h4 class="detailed-plan-heading text-blue-600 font-bold text-lg">Your Calorie Goal: ${targetCalorie.toLocaleString()} Calories</h4>
+                        <p class="text-gray-700 mb-4">Maintaining your weight means balancing energy intake and expenditure consistently.</p>
+
+                        <h5 class="font-semibold text-secondary">Protein Priority:</h5>
+                        <p>Continue to aim for **${protein.toLocaleString()} grams** of protein daily. This supports general health, satiety, and muscle preservation.</p>
+                        
+                        <h5 class="font-semibold text-secondary mt-3">Lifestyle Strategies:</h5>
+                        <ul class="list-disc list-inside ml-4 text-sm space-y-1">
+                            <li>**Consistency is Key:** Pay attention to portion sizes, even on weekends, to prevent "weekend creep."</li>
+                            <li>**Listen to Your Body:** Eat when hungry and stop when satisfied. Avoid mindless eating.</li>
+                            <li>**Stay Active:** Continue the activity level you selected—it is factored into your TDEE. Mix strength training and cardio for overall health.</li>
+                        </ul>
+                    `;
+                }
+            }
+            
+            detailedPlanOutput.innerHTML = `<h3 class="text-2xl font-extrabold text-secondary mb-4">${title}</h3>` + content;
+        }
+
+        /**
+         * Generates and displays a detailed, essential skincare routine.
+         */
+        function generateSkincarePlan() {
+            skincarePlanOutput.classList.remove('hidden');
+            const title = "Essential Daily Skincare Routine";
+            const content = `
+                <p class="text-gray-700 mb-4">A simple, consistent routine focusing on cleansing, hydration, and protection is the foundation of healthy skin. Always patch test new products!</p>
+
+                <div class="mb-5">
+                    <h4 class="detailed-plan-heading text-primary font-bold text-lg">Morning Routine (Protection)</h4>
+                    <ul class="list-disc list-inside ml-4 text-sm space-y-2 text-gray-700">
+                        <li>**Step 1: Gentle Cleanse:** Wash face with water or a mild cleanser.</li>
+                        <li>**Step 2: Antioxidant Serum:** Apply a Vitamin C serum to fight free radicals and brighten skin.</li>
+                        <li>**Step 3: Moisturize:** Apply a lightweight moisturizer suitable for your skin type.</li>
+                        <li>**Step 4: Sunscreen (Crucial):** Apply a broad-spectrum SPF $30+$ every day, rain or shine. Reapply every 2 hours if outdoors.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="detailed-plan-heading text-secondary font-bold text-lg">Evening Routine (Repair)</h4>
+                    <ul class="list-disc list-inside ml-4 text-sm space-y-2 text-gray-700">
+                        <li>**Step 1: Double Cleanse:** Use an oil-based cleanser (or micellar water) to remove sunscreen/makeup, followed by a gentle water-based cleanser.</li>
+                        <li>**Step 2: Treatment:** Apply a targeted treatment (e.g., Retinol/AHA $2-3$ times a week, or Hyaluronic Acid/Niacinamide). *Note: Avoid Retinol if Pregnant or Breastfeeding.*</li>
+                        <li>**Step 3: Moisturize:** Use a richer moisturizer or night cream to lock in hydration while you sleep.</li>
+                    </ul>
+                </div>
+                
+                <div class="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-lg">
+                    <h5 class="font-semibold text-primary text-sm">Nutrition-Skin Connection:</h5>
+                    <p class="text-xs text-gray-600">Remember to consume those essential fatty acids (omega-$3$'s from fish, flax) and stay well-hydrated to support skin barrier function from the inside out.</p>
+                </div>
+            `;
+            
+            skincarePlanOutput.innerHTML = `<h3 class="text-2xl font-extrabold text-secondary mb-4">${title}</h3>` + content;
+        }
+
+        // --- Food Search Logic ---
+
+        /**
+         * Filters the FOOD_DATABASE based on a maximum calorie limit.
+         * Renders the results to the foodList element.
+         */
+        function searchFoodByCalories() {
+            foodList.innerHTML = ''; // Clear previous results
+            foodStatusMessage.textContent = 'Searching...';
+            foodStatusMessage.classList.remove('hidden'); // Ensure status message is visible during search
+
+            const maxCalories = parseFloat(calorieSearchInput.value);
+
+            if (isNaN(maxCalories) || maxCalories <= 0) {
+                foodStatusMessage.textContent = 'Please enter a valid calorie limit greater than 0.';
+                return;
+            }
+
+            const filteredFoods = FOOD_DATABASE.filter(food => food.calories <= maxCalories);
+
+            if (filteredFoods.length === 0) {
+                foodStatusMessage.textContent = `No foods found with ${maxCalories} calories or less. Try a higher number!`;
+            } else {
+                foodStatusMessage.classList.add('hidden'); // Hide status message if results are found
+                
+                // Sort by calories for a cleaner presentation
+                filteredFoods.sort((a, b) => a.calories - b.calories); 
+
+                filteredFoods.forEach(food => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'flex justify-between p-2 border-b border-gray-100 last:border-b-0';
+                    listItem.innerHTML = `
+                        <span class="font-medium text-gray-700">${food.name}</span>
+                        <span class="text-sm font-semibold text-primary">
+                            ${food.calories} Cal / ${food.protein}g Protein
+                        </span>
+                    `;
+                    foodList.appendChild(listItem);
+                });
+            }
+        }
+
+
+        // --- Event Listeners and Initialization ---
+        
+        // 1. Nutritional Calculation
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            errorMessage.classList.add('hidden');
+
+            const selectedUnit = document.querySelector('input[name="unitSystem"]:checked').value;
+            let weightKg = 0;
+            let heightCm = 0;
+
+            const gender = document.getElementById('gender').value;
+            const age = parseFloat(ageInput.value);
+            const activity = document.getElementById('activity').value;
+            const status = statusSelect.value; // NEW: Get status
+            
+            // 1. Validate General Inputs
+            // NOTE: Min age is now 14 to cover the 'Teenage Girl' option
+            if (!gender || isNaN(age) || !activity || age < 14) { 
+                errorMessage.textContent = "Please fill out Gender, Age (14+), and Activity Level.";
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            // 2. Handle Unit Conversions and Validation
+            if (selectedUnit === 'metric') {
+                const weight = parseFloat(weightKgInput.value);
+                const height = parseFloat(heightCmInput.value);
+
+                if (isNaN(weight) || isNaN(height) || weight <= 0 || height <= 0) {
+                    errorMessage.textContent = "Please enter valid Weight (kg) and Height (cm) values.";
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                weightKg = weight;
+                heightCm = height;
+            } else { // Imperial
+                const weight = parseFloat(weightLbsInput.value);
+                const heightFt = parseFloat(heightFtInput.value);
+                const heightIn = parseFloat(heightInInput.value);
+                
+                if (isNaN(weight) || weight <= 0 || isNaN(heightFt) || isNaN(heightIn) || (heightFt * 12 + heightIn) <= 10) {
+                    errorMessage.textContent = "Please enter valid Weight (lbs) and Height (ft/in) values.";
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                // Conversion factors: 1 lb = 0.453592 kg | 1 ft = 30.48 cm | 1 in = 2.54 cm
+                weightKg = weight * 0.453592;
+                const totalInches = (heightFt * 12) + heightIn;
+                heightCm = totalInches * 2.54;
+            }
+
+            // 3. Perform Calculations
+            const calculatedBMR = calculateBMR(weightKg, heightCm, age, gender);
+            const calculatedTDEE = calculateTDEE(calculatedBMR, activity);
+            const calculatedProtein = calculateProtein(weightKg, activity, status); // UPDATED CALL
+
+            // 4. Display Results
+            bmrResult.textContent = calculatedBMR.toLocaleString();
+            tdeeResult.textContent = calculatedTDEE.toLocaleString();
+            proteinResult.textContent = calculatedProtein.toLocaleString();
+
+            // Show results panel and hide initial message
+            initialMessage.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+
+            // 5. Display Goal Plan and store TDEE/Protein
+            displayGoalPlan(calculatedTDEE, calculatedProtein, status); // UPDATED CALL
+        });
+        
+        // 2. Goal Selection Change (Enables/Disables the button)
+        goalSelect.addEventListener('change', () => {
+            const status = statusSelect.value;
+            // Button is disabled only if status is 'none' AND no goal is selected
+            generatePlanButton.disabled = (status === 'none' && !goalSelect.value);
+            detailedPlanOutput.classList.add('hidden');
+        });
+        
+        // 2b. Status Selection Change (Forces re-calc and updates button state)
+        statusSelect.addEventListener('change', () => {
+            // Force re-calculation advice
+            initialMessage.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            goalPlanningContainer.classList.add('hidden');
+            
+            const status = statusSelect.value;
+            // Button is disabled only if status is 'none' AND no goal is selected
+            generatePlanButton.disabled = (status === 'none' && !goalSelect.value);
+            detailedPlanOutput.classList.add('hidden');
+        });
+
+        // 3. Detailed Plan Generation Button Click
+        generatePlanButton.addEventListener('click', () => {
+            const selectedGoal = goalSelect.value;
+            const status = statusSelect.value;
+            
+            if ((selectedGoal || status !== 'none') && lastTDEE > 0) {
+                // When a special status is selected, the generator function prioritizes it.
+                // We pass the actual selected goal/status to the generator.
+                generateDetailedPlan(selectedGoal, lastTDEE, lastProtein, status);
+            }
+        });
+
+        // 4. Skincare Plan Generation Button Click
+        generateSkincareButton.addEventListener('click', generateSkincarePlan);
+
+        // 5. Food Search Button Click
+        searchFoodButton.addEventListener('click', searchFoodByCalories);
+        
+        // Optional: Allow pressing Enter in the search input to trigger search
+        calorieSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission if input is inside form
+                searchFoodByCalories();
+            }
+        });
+        
+        // Run the time-based reminder function immediately when the script loads
+        displayTimeBasedReminder();
+
+    </script>
+</body>
+</html>
